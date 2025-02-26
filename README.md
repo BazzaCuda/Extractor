@@ -13,7 +13,7 @@ If you click a row in the grid, pressing DELETE will delete that row. It doesn't
 
 Clicking a cell in the grid will copy the contents to the clipboard.
 
-Passwords are contained in the passwords.txt file which is UTF-8 file to allow for special characters. If you edit passwords.txt, make sure your editor keeps the file UTF-8 encoded. You can edit this file and check the Reload PWs checkbox. The file will be reloaded on the next "Find PWs" or "Extract" operation. This saves you having to restart the app between edits. 
+Passwords are contained in the passwords.txt file which is a UTF-8 file to allow for special characters. If you edit passwords.txt, make sure your editor keeps the file UTF-8 encoded. You can edit this file and check the Reload PWs checkbox. The file will be reloaded on the next "Find PWs" or "Extract" operation. This saves you having to restart the app between edits. 
 
 If you use the add password box, Extractor will maintain the UTF-8 encoding of the passwords.txt file automatically.
 
