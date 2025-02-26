@@ -19,7 +19,11 @@ If you use the add password box, Extractor will maintain the UTF-8 encoding of t
 
 In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list of which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip
 
+The "Extract" function will do a "Find PWs" first. You don't have to do "Find PWs" first and then "Extract".
 
+If a password is found, it will be copied to the top of the list so that if subsequent archives use the same password it will be found much quicker the next time.
+
+Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
  
 ![extractor 2025-02-26_115104](https://github.com/user-attachments/assets/3612f2a1-4421-442e-8c39-aaec0960d4f0)
