@@ -23,7 +23,7 @@ In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated li
 
 The "Extract" function will do a "Find PWs" first. You don't have to do "Find PWs" first and then "Extract".
 
-If a password is found, it will be copied to the top of the list so that if subsequent archives use the same password it will be found much quicker the next time.
+If a password is found, it will be copied to the top of the internal list so that if subsequent archives use the same password it will be found much quicker the next time. The internal list gets reset each time the app is run.
 
 Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
