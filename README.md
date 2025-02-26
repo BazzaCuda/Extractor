@@ -19,7 +19,7 @@ Passwords are contained in the passwords.txt file which is a UTF-8 file to allow
 
 If you use the add password box, Extractor will maintain the UTF-8 encoding of the passwords.txt file automatically.
 
-In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list of which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip
+In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list specifying which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip
 
 The "Extract" function will do a "Find PWs" first. You don't have to do "Find PWs" first and then "Extract".
 
