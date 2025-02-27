@@ -443,6 +443,7 @@ end;
 
 procedure TForm1.btnFindFilesClick(Sender: TObject);
 begin
+  initGrid(sg);
   findFiles(FConfig);
 end;
 
