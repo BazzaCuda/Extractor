@@ -29,39 +29,123 @@ type
   TProcessType = (ptFind, ptExtract);
   rawUTF8 = system.UTF8String;
 
+
+  IPasswords = interface
+  ['{032A1242-D1F7-47D5-8045-39446084DBE3}']
+    function getCount:  integer;
+    function getPassword(aIx: integer): rawUTF8;
+    function getPWs:    TStringlist;
+
+    function addNewPassword(const aNewPassword: rawUTF8): integer;
+    function insertPassword(aIx: integer; aPassword: rawUTF8): boolean;
+    function loadPasswords: integer;
+    property count: integer     read getCount;
+    property password[aIx: integer]: rawUTF8 read getPassword;
+    property PWs:   TStringlist read getPWs;
+  end;
+
+  TPasswords = class(TInterfacedObject, IPasswords)
+  strict private
+    FPasswords: TStringlist;
+  private
+    function getPasswordsFile: string;
+    function loadPasswordsFromFile(const aPasswordFile: string): boolean;
+    function savePasswordsToFile(const aPasswordFile: string): boolean;
+    function getDedupedFile: string;
+  protected
+    destructor  Destroy; override;
+  public
+    constructor create;
+    function getPassword(aIx: integer): rawUTF8;
+    function getCount:  integer;
+    function getPWs:    TStringlist;
+
+    function addNewPassword(const aNewPassword: rawUTF8): integer;
+    function insertPassword(aIx: integer; aPassword: rawUTF8): boolean;
+    function loadPasswords: integer;
+  end;
+
+  TConfigRec = record
+    crDLPath:         string;
+    crDLExts:         TArray<string>;
+    crDLLPath:        string;
+    crPasswords:      IPasswords;
+    crPasswordCount:  integer;
+    crSG:             TStringGrid;
+    crFeedback:       TLabel;
+    // operation specific
+    crProcessType:    TProcessType;
+    crArchivePath:    string;
+    crPassword:       rawUTF8;
+    crCancel:         boolean;
+  end;
+
+  TFindFunc = function(const aConfig: TConfigRec; const aFilePath: string): boolean;
+
+  IFileFinder = interface
+  ['{33864E0C-372C-47B3-BCBF-045356E9C391}']
+    procedure setConfigRec  (const aValue: TConfigRec);
+    procedure setFindFunc   (const aValue: TFindFunc);
+    procedure setFileMask   (const aValue: string);
+    procedure setRootFolder (const aValue: string);
+    function  findFiles: boolean;
+    property  configRec:   TConfigRec write setConfigRec;
+    property  fileMask:    string     write setFileMask;
+    property  findFunc:    TFindFunc  write setFindFunc;
+    property  rootFolder:  string     write setRootFolder;
+  end;
+
+  TFileFinder = class(TInterfacedObject, IFileFinder)
+  strict private
+    FConfigRec:   TConfigRec;
+    FFindFunc:    TFindFunc;
+    FFileMask:    string;
+    FRootFolder:  string;
+  public
+    function  findFiles: boolean;
+    procedure setConfigRec  (const aValue: TConfigRec);
+    procedure setFindFunc   (const aValue: TFindFunc);
+    procedure setFileMask   (const aValue: string);
+    procedure setRootFolder (const aValue: string);
+  end;
+
   TForm1 = class(TForm)
-    sg: TStringGrid;
-    pnlButtons: TPanel;
-    btnExtract: TButton;
-    lblFeedback: TLabel;
-    btnCancel: TButton;
-    btnFind: TButton;
-    chbReloadPWs: TCheckBox;
-    edtNewPassword: TEdit;
-    btnAddNewPassword: TButton;
-    btnFindFiles: TButton;
-    procedure btnExtractClick(Sender: TObject);
+    sg:                 TStringGrid;
+    btnAddNewPassword:  TButton;
+    btnCancel:          TButton;
+    btnExtract:         TButton;
+    btnFindPWs:         TButton;
+    btnFindFiles:       TButton;
+    chbReloadPWs:       TCheckBox;
+    edtNewPassword:     TEdit;
+    lblFeedback:        TLabel;
+    pnlButtons:         TPanel;
     procedure FormCreate(Sender: TObject);
     procedure FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure btnCancelClick(Sender: TObject);
-    procedure sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
-    procedure btnFindClick(Sender: TObject);
-    procedure btnAddNewPasswordClick(Sender: TObject);
-    procedure btnFindFilesClick(Sender: TObject);
     procedure sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormShow(Sender: TObject);
+    procedure btnAddNewPasswordClick(Sender: TObject);
+    procedure btnCancelClick(Sender: TObject);
+    procedure btnExtractClick(Sender: TObject);
+    procedure btnFindFilesClick(Sender: TObject);
+    procedure btnFindPWsClick(Sender: TObject);
+    procedure sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
   strict private
-    FPasswords: TStringList;
-    FDLLPath:   string;
-    FDLPath:    string;
-    FDLExts:    TArray<string>;
+    FConfig: TConfigRec;
   private
-    procedure WMDropFiles(var msg: TWMDropFiles);  message WM_DROPFILES;
+    function  checkForReload: boolean;
+    procedure WMDropFiles(var msg: TWMDropFiles); message WM_DROPFILES;
+    procedure setPasswords(const Value: IPasswords);
   public
+    function finishSetup: boolean;
+    property config:      TConfigRec read FConfig write FConfig;
+    property passwords:   IPasswords              write setPasswords;
   end;
 
 var
   Form1: TForm1;
+
+function readConfigFile: TConfigRec;
 
 implementation
 
@@ -74,45 +158,131 @@ uses
   _debugWindow;
 
 type
+  TStringGridHelper = class helper for TStringGrid
+  public
+    procedure addRow(const aFilePath: string);
+    procedure clearCol(const aColIx: integer);
+  end;
+
   TCustomGridHelper = class helper for TCustomGrid
   public
     procedure delRow(aRow: integer);
   end;
 
-var
-  GCancel: boolean;
+procedure initGrid(aSG: TStringGrid);
+const
+  cNoSelection: TGridRect = (Left: 0; Top: -1; Right: 0; Bottom: -1);
 
-procedure clearStringGrid(const grid: TStringGrid);
-var
-  c, r: integer;
+  procedure clearStringGrid(const grid: TStringGrid);
+  var
+    c, r: integer;
+  begin
+    for c := 0 to pred(grid.colCount) do
+      for r := 0 to pred(grid.rowCount) do
+        grid.cells[c, r] := '';
+  end;
+
 begin
-  for c := 0 to pred(grid.colCount) do
-    for r := 0 to pred(grid.rowCount) do
-      grid.cells[c, r] := '';
+  clearStringGrid(aSG);
+  aSG.defaultRowHeight  := 16;
+  aSG.cells[0, 0]       := 'file';
+  aSG.cells[1, 0]       := 'password';
+  aSG.cells[2, 0]       := 'result';
+  aSG.colWidths[0]      := 400;
+  aSG.colWidths[1]      := 200;
+  aSG.rowCount          := 1;
+  aSG.selection         := cNoSelection; // prevent the "file" column header from being auto-selected
 end;
 
-function shiftKeyDown: boolean;
-var vShiftState: TShiftState;
+function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
+ // Embarcadero don't allow this to be local to the findFiles function, because "reasons" :(
+ // Consequently, I've had to add aConfig as a parameter which makes this a much less neater and generic a solution than it was going to be :(
+ // Having said that, in another project you could define TConfigRec completely differently, so TFileFinder is still a plausibly generic solution
 begin
-  vShiftState   := KeyboardStateToShiftState;
-  result := ssSHIFT in vShiftState;
+  result := FALSE;
+  aConfig.crSG.addRow(aFilePath);
+  result := TRUE;
 end;
 
-function extract7zArchive(aFilePath: string; aPassword: rawUTF8; aDLLPath: string): boolean;
+function findFiles(const aConfig: TConfigRec): boolean;
+
+  // function newFile was supposed to go here
+
+  function findFilesByExt(aExt: string): boolean;
+  begin
+    result := FALSE;
+
+    var vFileFinder:IFileFinder := TFileFinder.create;
+
+    vFileFinder.configRec   := aConfig;
+    vFileFinder.rootFolder  := aConfig.crDLPath;
+    vFileFinder.fileMask    := aExt;
+    vFileFinder.findFunc    := newFile;
+    vFileFinder.findFiles;
+
+    result := TRUE;
+  end;
+
+begin
+  result := FALSE;
+
+  for var i := 0 to length(aConfig.crDLExts) - 1 do findFilesByExt(aConfig.crDLExts[i]);
+
+  result := TRUE;
+end;
+
+function readConfigFile: TConfigRec;
+var
+  vExtsList:  string;
+begin
+  result := default(TConfigRec);
+  var vSL := TStringList.create;
+  try
+    vSL.loadFromFile(extractFilePath(paramStr(0)) + 'extractor.ini');
+    result.crDLPath := vSL.values['DLPath'];
+    vExtsList       := vSL.values['DLExts'];
+  finally
+    vSL.free;
+  end;
+
+  result.crDLExts   := vExtsList.split([',', ';']);
+  result.crDLLPath  := extractFilePath(paramStr(0)) + '7z.dll';
+
+  case fileExists(result.crDLLPath) and directoryExists(result.crDLPath) and (length(result.crDLExts) <> 0) of FALSE: raise exception.create('invalid extractor.ini settings'); end;
+
+  result.crDLPath := includeTrailingBackslash(result.crDLPath);
+end;
+
+function refreshUI(const aConfig: TConfigRec): boolean;
+begin
+  result := FALSE;
+
+  aConfig.crSG.repaint;
+  aConfig.crFeedback.repaint;
+  application.processMessages;
+
+  result := TRUE;
+end;
+
+function extractArchive(const aConfig: TConfigRec; const aRowIx: integer): boolean;
 var
   vArchive: I7zReader;
   vFormatHandler: T7zFormatHandler;
 begin
-  result    := FALSE;
-  vFormatHandler := T7zLib.formatDetect(aFilePath);
+  result := FALSE;
+
+  aConfig.crSG.cells[2, aRowIx] := 'extracting';
+  refreshUI(aConfig);
+
+  vFormatHandler := T7zLib.formatDetect(aConfig.crArchivePath);
 
   try
-    vArchive  := new7zReader(aFilePath, vFormatHandler, aDLLPath, aPassword);
+    vArchive  := new7zReader(aConfig.crArchivePath, vFormatHandler, aConfig.crDLLPath, aconfig.crPassword);
   except
     EXIT;
   end;
 
-  var vOutputPath := extractFilePath(aFilePath) + TPath.getFileNameWithoutExtension(aFilePath) + '\';
+  var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(aConfig.crArchivePath) + '\';
 
   try
     vArchive.extractAll(vOutputPath);
@@ -121,97 +291,40 @@ begin
   end;
 end;
 
-procedure initGrid(aSG: TStringGrid);
-const
-  cNoSelection: TGridRect = (Left: 0; Top: -1; Right: 0; Bottom: -1);
-begin
-  clearStringGrid(aSG);
-  aSG.defaultRowHeight := 16;
-  aSG.cells[0, 0]  := 'file';
-  aSG.cells[1, 0]  := 'password';
-  aSG.cells[2, 0]  := 'result';
-  aSG.colWidths[0] := 400;
-  aSG.colWidths[1] := 200;
-  aSG.rowCount     := 1;
-  aSG.selection    := cNoSelection;
-end;
-
-procedure findFiles(aDLPath: string; aExts: TArray<string>; aSG: TStringGrid);
-var
-  vRowIx: integer;
-
-  procedure findFilesByExt(aExt: string);
-  var
-    RC: integer;
-    SR: TSearchRec;
-  begin
-    RC := findFirst(aDLPath + aExt, faAnyFile - faDirectory - faHidden - faSysFile, SR);
-    while RC = 0 do begin
-                      inc(vRowIx);
-                      aSG.rowCount := aSG.rowCount + 1;
-                      aSG.cells[0, vRowIx] := aDLPath + SR.name;
-                      RC := findNext(SR); end;
-    findClose(SR);
-  end;
-
-begin
-  initGrid(aSG);
-
-  vRowIx := 0;
-
-  for var i := 0 to length(aExts) - 1 do findFilesByExt(aExts[i]);
-end;
-
-procedure loadPasswords(aPasswords: TStringList; const aNewPassword: rawUTF8);
-begin
-  case aPasswords.count = 0 of FALSE: EXIT; end; // user must force reload if reqd
-  aPasswords.duplicates := dupIgnore;
-  aPasswords.sorted     := TRUE;
-  aPasswords.loadFromFile(extractFilePath(paramStr(0)) + 'passwords.txt');
-  aPasswords.sorted     := FALSE;
-
-  case trim(aNewPassword) = '' of FALSE:  begin
-                                            aPasswords.insert(0, aNewPassword);
-                                            aPasswords.saveToFile(extractFilePath(paramStr(0)) + 'passwords.txt'); end;end;
-
-  aPasswords.saveToFile(extractFilePath(paramStr(0)) + 'passwords_deduped.txt');
-  aPasswords.insert(0, '');
-end;
-
-function smallestItemIx(aArchive: I7zReader): integer; inline;
-begin
-  result    := -1;
-  var vSize := -1;
-  for var i := 0 to aArchive.count - 1 do begin
-    case aArchive.isFolder[i] of TRUE: CONTINUE; end;   // ignore folders
-    case aArchive.size[i] = 0 of TRUE: CONTINUE; end;   // ignore zero length files
-    case vSize = -1 of   TRUE:  begin
-                                  result := i;
-                                  vSize := aArchive.size[i]; end;
-                        FALSE: case aArchive.size[i] < vSize of  TRUE:  begin
-                                                                          result := i;
-                                                                          vSize   := aArchive.size[i]; end;end;end;end;
-end;
-
-function test7zArchive(aFilePath: string; aPassword: rawUTF8; aDLLPath: string): boolean;
+function testArchive(const aConfig: TConfigRec; aPWIx: integer): boolean;
 var
   vArchive: I7zReader;
   vFormatHandler: T7zFormatHandler;
   vStream: TMemoryStream;
   vStreamSize: int64;
+
+  function smallestItemIx: integer;
+  begin
+    result    := -1;
+    var vSize := -1;
+    for var i := 0 to vArchive.count - 1 do begin
+      case vArchive.isFolder[i] of TRUE: CONTINUE; end;   // ignore folders
+      case vArchive.size[i] = 0 of TRUE: CONTINUE; end;   // ignore zero length files
+      case vSize = -1 of   TRUE:  begin
+                                    result := i;
+                                    vSize := vArchive.size[i]; end;
+                          FALSE: case vArchive.size[i] < vSize of  TRUE:  begin
+                                                                            result := i;
+                                                                            vSize   := vArchive.size[i]; end;end;end;end;
+  end;
+
 begin
   result    := FALSE;
-  vFormatHandler := T7zLib.formatDetect(aFilePath);
-//  debugString('aFilePath', aFilePath);
+  vFormatHandler := T7zLib.formatDetect(aConfig.crArchivePath);
 //  TDebug.debugEnum<T7zFormatHandler>('vFormatHandler', vFormatHandler);
 
   try
-    vArchive  := new7zReader(aFilePath, vFormatHandler, aDLLPath, aPassword);
+    vArchive  := new7zReader(aConfig.crArchivePath, vFormatHandler, aConfig.crDLLPath, aConfig.crPasswords.password[aPWIx]);
   except
     EXIT;
   end;
 
-  var vIx   := smallestItemIx(vArchive);
+  var vIx   := smallestItemIx;
   case vIx = -1 of TRUE: EXIT; end;        // automatic fail
 
   var vZipName  := vArchive.zipName[vIx];
@@ -233,155 +346,156 @@ begin
   result := vStreamSize = vItemSize;
 end;
 
-procedure refreshUI(aSG: TStringGrid; aFeedback: TLabel);
-begin
-  aSG.repaint;
-  aFeedback.repaint;
-  application.processMessages;
-end;
+function findPW(var aConfig: TConfigRec; const aRowIx: integer): boolean; // result is also true if the archive isn't password protected, i.e. the password is ''
 
-function processFile(aSG: TStringGrid; const aRowIx: integer; aPasswords: TStringList; const aProcessType: TProcessType; aFeedback: TLabel; const aDLLPath: string): boolean;
-var
-  vFilePath:   string;
-  vPW:         string;
-  vTestResult: boolean;
-begin
-  result              := FALSE;
-  vPW                 := '';
-  aFeedback.caption   := '';
-  vFilePath           := aSG.cells[0, aRowIx];
-
-  for var i := 0 to aPasswords.count - 1 do begin
-    case GCancel of  TRUE: BREAK; end;
-    aSG.cells[1, aRowIX] := '';
-    aSG.cells[2, aRowIX] := 'testing';
-    case i = 0 of FALSE: aFeedback.caption := format('pw: %d of %d', [i, aPasswords.count - 1]); end;
-    refreshUI(aSG, aFeedback);
-    try
-      vTestResult := test7zArchive(vFilePath, aPasswords[i], aDLLPath);
-    except end;
-    case vTestResult of  TRUE:  begin
-                                  aSG.cells[2, aRowIx] := '';
-                                  vPW := aPasswords[i];
-                                  case vPW = '' of  TRUE: vPW := '<no pw>';
-                                                   FALSE: aSG.cells[2, aRowIx] := 'Found'; end;
-                                  aSG.cells[1, aRowIx] := vPW;
-                                  refreshUI(aSG, aFeedback);
-
-                                  case aProcessType of ptFind: begin result := TRUE; BREAK; end;end;
-
-                                  aSG.cells[2, aRowIx] := 'extracting';
-                                  refreshUI(aSG, aFeedback);
-                                  result := extract7zArchive(vFilePath, aPasswords[i], aDLLPath);
-                                  BREAK; end;
-                        FALSE:  begin
-                                  aSG.cells[1, aRowIx] := '';
-                                  aSG.cells[2, aRowIx] := 'failed';
-                                  refreshUI(aSG, aFeedback); end;
-    end;
-  end;
-  aFeedback.caption := '';
-
-  case result and (vPW <> '<no pw>') of TRUE: aPasswords.insert(1, vPW); end;
-
-  case aProcessType of ptFind: EXIT; end;
-
-  case result of   TRUE: aSG.cells[2, aRowIx] := 'success';
-                  FALSE: aSG.cells[2, aRowIx] := 'failed'; end;
-  refreshUI(aSG, aFeedback);
-end;
-
-procedure processFiles(aProcessType: TProcessType; aSG: TStringGrid; aPasswords: TStringList; aFeedback: TLabel; const aDLLPath: string);
-begin
-  GCancel := FALSE;
-  loadPasswords(aPasswords, '');
-  for var rowIx := 1 to aSG.rowCount - 1 do aSG.cells[2, rowIx] := '';                                                // clear the results column
-  for var rowIx := 1 to aSG.rowCount - 1 do processFile(aSG, rowIx, aPasswords, aProcessType, aFeedback, aDLLPath);   // process the files column
-end;
-
-function readConfigFile(var vDLLPath: string; var vDLPath: string; var vDLExts: TArray<string>): boolean;
-var vExtsList: string;
-begin
-  var vSL := TStringList.create;
-  try
-    vSL.loadFromFile(extractFilePath(paramStr(0)) + 'extractor.ini');
-    vDLPath   := vSL.values['DLPath'];
-    vExtsList := vSL.values['DLExts'];
-  finally
-    vSL.free;
+  procedure setFeedback(aIx: integer);
+  begin
+    case aIx = 0 of TRUE: EXIT; end;
+    aConfig.crFeedback.caption := format('pw: %d of %d', [aIx, aConfig.crPasswords.count - 1]);
+    refreshUI(aConfig);
   end;
 
-  vDLExts   := vExtsList.split([',', ';']);
-  vDLLPath  := extractFilePath(paramStr(0)) + '7z.dll';
+  procedure initGrid;
+  begin
+    aConfig.crFeedback.caption  := '';
+    aConfig.crPassword          := '';
+    aConfig.crSG.cells[1, aRowIX] := '';
+    aConfig.crSG.cells[2, aRowIX] := 'testing';
+    refreshUI(aConfig);
+  end;
 
-  result := fileExists(vDLLPath) and directoryExists(vDLPath) and (length(vDLExts) <> 0);
+begin
+  result := FALSE;
+  var vPW: string;
 
-  case result of FALSE: raise exception.create('invalid extractor.ini settings'); end;
+  initGrid;
+
+  aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
+
+  for var i := 0 to aConfig.crPasswordcount - 1 do begin
+    setFeedback(i);
+    case aConfig.crCancel of TRUE: BREAK; end;
+    result := testArchive(aConfig, i);
+    case result of TRUE:  begin
+                            aConfig.crPassword := aConfig.crPasswords.password[i];
+                            BREAK; end;end;end;
+
+  case result of   TRUE:  begin
+                            aConfig.crSG.cells[2, aRowIx] := '';
+                            case aConfig.crPassword = '' of  TRUE:  aConfig.crSG.cells[1, aRowIx] := '<no pw>';
+                                                            FALSE:  begin
+                                                                      aConfig.crSG.cells[1, aRowIx] := aConfig.crPassword;
+                                                                      aConfig.crSG.cells[2, aRowIx] := 'Found';
+                                                                    end;end;
+                          end;
+                  FALSE:  begin
+                            aConfig.crSG.cells[1, aRowIx] := '';
+                            aConfig.crSG.cells[2, aRowIx] := 'failed';
+                          end;end;
+
+  aConfig.crFeedback.caption  := '';
+  refreshUI(aConfig);
+  case result and (aConfig.crPassword <> '') of TRUE: aConfig.crPasswords.insertPassword(1, aConfig.crPassword); end; // after the '' entry at ix 0
 end;
 
+function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
+begin
+  result := findPW(aConfig, aRowIx);
+  case result and (aConfig.crProcessType = ptExtract) of TRUE: result := extractArchive(aConfig, aRowIx); end;
+
+  case aConfig.crProcessType of ptFind: EXIT; end;
+
+  case result of   TRUE: aConfig.crSG.cells[2, aRowIx] := 'success';
+                  FALSE: aConfig.crSG.cells[2, aRowIx] := 'failed'; end;
+  refreshUI(aConfig);
+end;
+
+function processFiles(var aConfig: TConfigRec): boolean;
+begin
+  result := FALSE;
+
+  aConfig.crSG.clearCol(2);                                                         // clear the result column
+  for var vRowIx := 1 to aConfig.crSG.rowCount - 1 do processFile(aConfig, vRowIx); // process the files column
+
+  result := TRUE;
+end;
 
 //========== FORM EVENT HANDLERS ==========
 
 procedure TForm1.btnAddNewPasswordClick(Sender: TObject);
 begin
-  FPasswords.clear;
-  loadPasswords(FPasswords, edtNewPassword.text);
+  FConfig.crPasswordCount := FConfig.crPasswords.addNewPassword(edtNewPassword.text);
   edtNewPassword.clear;
 end;
 
 procedure TForm1.btnCancelClick(Sender: TObject);
 begin
-  GCancel := TRUE;
+  FConfig.crCancel := TRUE;
 end;
 
 procedure TForm1.btnExtractClick(Sender: TObject);
 begin
-  case chbReloadPWs.checked of TRUE: FPasswords.clear; end;
-  chbReloadPWs.checked := FALSE;
-  processFiles(ptExtract, sg, FPasswords, lblFeedback, FDLLPath);
-end;
-
-procedure TForm1.btnFindClick(Sender: TObject);
-begin
-  case chbReloadPWs.checked of TRUE: FPasswords.clear; end;
-  chbReloadPWs.checked := FALSE;
-  processFiles(ptFind, sg, FPasswords, lblFeedback, FDLLPath);
+  checkForReload;
+  FConfig.crProcessType := ptExtract;
+  FConfig.crCancel      := FALSE;
+  processFiles(FConfig);
 end;
 
 procedure TForm1.btnFindFilesClick(Sender: TObject);
 begin
-  findFiles(FDLPath, FDLExts, sg);
+  findFiles(FConfig);
 end;
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TForm1.btnFindPWsClick(Sender: TObject);
 begin
-  case FPasswords = NIL of FALSE: FPasswords.free; end;
+  checkForReload;
+  FConfig.crProcessType := ptFind;
+  FConfig.crCancel      := FALSE;
+  processFiles(FConfig);
+end;
+
+function TForm1.checkForReload: boolean;
+begin
+  result := FALSE;
+  case chbReloadPWs.checked of TRUE: FConfig.crPasswordCount := FConfig.crPasswords.loadPasswords; end;
+  chbReloadPWs.checked := FALSE;
+  result := TRUE;
+end;
+
+function TForm1.finishSetup: boolean;
+begin
+  result := FALSE;
+
+  FConfig.crSG            := sg;
+  FConfig.crFeedback      := lblFeedback;
+  FConfig.crPasswordCount := FConfig.crPasswords.count;
+
+  result := TRUE;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  debugClear;
-
-  try
-    readConfigFile(FDLLPath, FDLPath, FDLExts);
-  except on e:exception do begin
-    showMessage(e.message);
-    halt;
-  end;end;
-
-  caption := format('Extractor - %s', [FDLPath]);
-
-  lblFeedback.caption         := '';
   dragAcceptFiles(handle, True);
-  FPasswords                  := TStringList.create;
-  FPasswords.defaultEncoding  := TEncoding.UTF8;
+
   initGrid(sg);
   width := sg.colWidths[0] + sg.colWidths[1] + sg.colWidths[2] + pnlButtons.width + 30;
+
+  lblFeedback.caption := '';
 end;
 
 procedure TForm1.FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
   accept := TRUE;
+end;
+
+procedure TForm1.FormShow(Sender: TObject);
+begin
+  caption := format('Extractor - %s', [FConfig.crDLPath]);
+end;
+
+procedure TForm1.setPasswords(const Value: IPasswords);
+begin
+  FConfig.crPasswords := value;
 end;
 
 procedure TForm1.sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -396,6 +510,12 @@ end;
 
 procedure TForm1.WMDropFiles(var msg: TWMDropFiles);
 var vFilePath: string;
+  function shiftKeyDown: boolean;
+  var vShiftState: TShiftState;
+  begin
+    vShiftState   := KeyboardStateToShiftState;
+    result := ssSHIFT in vShiftState;
+  end;
 begin
   inherited;
 
@@ -422,7 +542,144 @@ end;
 
 procedure TCustomGridHelper.delRow(aRow: integer);
 begin
-  self.deleteRow(aRow);
+  deleteRow(aRow);
+  case rowCount = 1 of TRUE: initGrid(TStringGrid(self)); end; // prevent the "file" column header from being auto-selected
+end;
+
+{ TPasswords }
+
+function TPasswords.getCount: integer;
+begin
+  result := FPasswords.count;
+end;
+
+function TPasswords.getPassword(aIx: integer): rawUTF8;
+begin
+  result := FPasswords[aIx];
+end;
+
+function TPasswords.getDedupedFile: string;
+begin
+  result := extractFilePath(paramStr(0)) + 'passwords_deduped.txt';
+end;
+
+function TPasswords.getPasswordsFile: string;
+begin
+  result := extractFilePath(paramStr(0)) + 'passwords.txt';
+end;
+
+constructor TPasswords.create;
+begin
+  inherited;
+  case fileExists(getPasswordsFile) of FALSE: raise exception.create('file not found: passwords.txt'); end;
+  FPasswords                  := TStringlist.create;
+  FPasswords.defaultEncoding  := TEncoding.UTF8;
+  loadPasswords;
+end;
+
+destructor TPasswords.Destroy;
+begin
+  case FPasswords = NIL of FALSE: FPasswords.free; end;
+  inherited;
+end;
+
+function TPasswords.addNewPassword(const aNewPassword: rawUTF8): integer;
+begin
+  result := -1;
+  case trim(aNewPassword) = '' of TRUE: EXIT; end;
+
+  loadPasswordsFromFile(getPasswordsFile); // reload the passwords file
+  FPasswords.insert(0, aNewPassword);      // insert the new password
+  savePasswordsToFile(getPasswordsFile);   // resave the passwords file
+  savePasswordsToFile(getDedupedFile);     // immediately save a sorted, de-duplicated copy
+  result := FPasswords.count;
+end;
+
+function TPasswords.getPWs: TStringlist;
+begin
+  result := FPasswords;
+end;
+
+function TPasswords.insertPassword(aIx: integer; aPassword: rawUTF8): boolean;
+begin
+  FPasswords.insert(aIx, aPassword);
+end;
+
+function TPasswords.loadPasswords: integer;
+begin
+  result := -1;
+  loadPasswordsFromFile(getPasswordsFile);
+  savePasswordsToFile(getDedupedFile);  // immediately save a sorted, de-duplicated copy
+  FPasswords.insert(0, '');             // first test will be always be to check if an archive has no password
+  result := FPasswords.count;
+end;
+
+function TPasswords.loadPasswordsFromFile(const aPasswordFile: string): boolean;
+begin
+  result := FALSE;
+  FPasswords.duplicates := dupIgnore;
+  FPasswords.sorted     := TRUE;
+  FPasswords.loadFromFile(aPasswordFile);
+  FPasswords.sorted     := FALSE;
+  result := TRUE;
+end;
+
+function TPasswords.savePasswordsToFile(const aPasswordFile: string): boolean;
+begin
+  result := FALSE;
+  FPasswords.saveToFile(aPasswordFile);
+  result := TRUE;
+end;
+
+{ TStringGridHelper }
+
+procedure TStringGridHelper.addRow(const aFilePath: string);
+begin
+  rowCount := rowCount + 1;
+  cells[0, rowCount - 1] := aFilePath;
+end;
+
+procedure TStringGridHelper.clearCol(const aColIx: integer);
+begin
+  for var rowIx := 1 to rowCount - 1 do cells[aColIx, rowIx] := '';
+end;
+
+{ TFileFinder }
+
+function TFileFinder.findFiles: boolean;
+var
+    RC: integer;
+    SR: TSearchRec;
+begin
+  result := FALSE;
+  RC := findFirst(FRootFolder + FFileMask, faAnyFile - faDirectory - faHidden - faSysFile, SR);
+
+  while RC = 0 do begin
+                    case assigned(FFindFunc) of TRUE: FFindFunc(FConfigRec, FRootFolder + SR.name); end;
+                    RC := findNext(SR); end;
+
+  findClose(SR);
+  result := TRUE;
+end;
+
+procedure TFileFinder.setConfigRec(const aValue: TConfigRec);
+begin
+  FConfigRec := aValue;
+end;
+
+procedure TFileFinder.setFileMask(const aValue: string);
+begin
+  FFileMask := aValue;
+end;
+
+procedure TFileFinder.setFindFunc(const aValue: TFindFunc);
+begin
+  FFindFunc := aValue;
+end;
+
+procedure TFileFinder.setRootFolder(const aValue: string);
+begin
+  FRootFolder := aValue;
 end;
 
 end.

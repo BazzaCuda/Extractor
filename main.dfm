@@ -11,9 +11,9 @@ object Form1: TForm1
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poScreenCenter
-  OnClose = FormClose
   OnCreate = FormCreate
   OnDragOver = FormDragOver
+  OnShow = FormShow
   TextHeight = 15
   object sg: TStringGrid
     Left = 0
@@ -66,14 +66,14 @@ object Form1: TForm1
       TabOrder = 1
       OnClick = btnCancelClick
     end
-    object btnFind: TButton
-      Left = 9
-      Top = 72
+    object btnFindPWs: TButton
+      Left = 6
+      Top = 41
       Width = 75
       Height = 25
       Caption = 'Find PWs'
       TabOrder = 2
-      OnClick = btnFindClick
+      OnClick = btnFindPWsClick
     end
     object chbReloadPWs: TCheckBox
       Left = 6
@@ -101,7 +101,7 @@ object Form1: TForm1
     end
     object btnFindFiles: TButton
       Left = 9
-      Top = 41
+      Top = 72
       Width = 75
       Height = 25
       Caption = 'Find Files'
