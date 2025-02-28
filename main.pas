@@ -162,37 +162,13 @@ type
   public
     procedure addRow(const aFilePath: string);
     procedure clearCol(const aColIx: integer);
+    procedure initGrid;
   end;
 
   TCustomGridHelper = class helper for TCustomGrid
   public
     procedure delRow(aRow: integer);
   end;
-
-procedure initGrid(aSG: TStringGrid);
-const
-  cNoSelection: TGridRect = (Left: 0; Top: -1; Right: 0; Bottom: -1);
-
-  procedure clearStringGrid(const grid: TStringGrid);
-  var
-    c, r: integer;
-  begin
-    for c := 0 to pred(grid.colCount) do
-      for r := 0 to pred(grid.rowCount) do
-        grid.cells[c, r] := '';
-  end;
-
-begin
-  clearStringGrid(aSG);
-  aSG.defaultRowHeight  := 16;
-  aSG.cells[0, 0]       := 'file';
-  aSG.cells[1, 0]       := 'password';
-  aSG.cells[2, 0]       := 'result';
-  aSG.colWidths[0]      := 400;
-  aSG.colWidths[1]      := 200;
-  aSG.rowCount          := 1;
-  aSG.selection         := cNoSelection; // prevent the "file" column header from being auto-selected
-end;
 
 function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
  // Embarcadero don't allow this to be local to the findFiles function, because "reasons" :(
@@ -355,7 +331,7 @@ function findPW(var aConfig: TConfigRec; const aRowIx: integer): boolean; // res
     refreshUI(aConfig);
   end;
 
-  procedure initGrid;
+  procedure initRow;
   begin
     aConfig.crFeedback.caption  := '';
     aConfig.crPassword          := '';
@@ -368,7 +344,7 @@ begin
   result := FALSE;
   var vPW: string;
 
-  initGrid;
+  initRow;
 
   aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
 
@@ -443,7 +419,7 @@ end;
 
 procedure TForm1.btnFindFilesClick(Sender: TObject);
 begin
-  initGrid(sg);
+  sg.initGrid;
   findFiles(FConfig);
 end;
 
@@ -478,7 +454,7 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   dragAcceptFiles(handle, True);
 
-  initGrid(sg);
+  sg.initGrid;
   width := sg.colWidths[0] + sg.colWidths[1] + sg.colWidths[2] + pnlButtons.width + 30;
 
   lblFeedback.caption := '';
@@ -520,7 +496,7 @@ var vFilePath: string;
 begin
   inherited;
 
-  case shiftKeyDown of TRUE: initGrid(sg); end;
+  case shiftKeyDown of TRUE: sg.initGrid; end;
 
   var hDrop := msg.Drop;
   try
@@ -544,7 +520,7 @@ end;
 procedure TCustomGridHelper.delRow(aRow: integer);
 begin
   deleteRow(aRow);
-  case rowCount = 1 of TRUE: initGrid(TStringGrid(self)); end; // prevent the "file" column header from being auto-selected
+  case rowCount = 1 of TRUE: TStringGrid(self).initGrid; end; // prevent the "file" column header from being auto-selected
 end;
 
 { TPasswords }
@@ -643,6 +619,31 @@ end;
 procedure TStringGridHelper.clearCol(const aColIx: integer);
 begin
   for var rowIx := 1 to rowCount - 1 do cells[aColIx, rowIx] := '';
+end;
+
+procedure TStringGridHelper.initGrid;
+const
+  cNoSelection: TGridRect = (Left: 0; Top: -1; Right: 0; Bottom: -1);
+
+  procedure clearStringGrid;
+  var
+    c, r: integer;
+  begin
+    for c := 0 to pred(colCount) do
+      for r := 0 to pred(rowCount) do
+        cells[c, r] := '';
+  end;
+
+begin
+  clearStringGrid;
+  defaultRowHeight  := 16;
+  cells[0, 0]       := 'file';
+  cells[1, 0]       := 'password';
+  cells[2, 0]       := 'result';
+  colWidths[0]      := 400;
+  colWidths[1]      := 200;
+  rowCount          := 1;
+  selection         := cNoSelection; // prevent the "file" column header from being auto-selected
 end;
 
 { TFileFinder }
