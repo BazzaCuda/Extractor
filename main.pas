@@ -376,7 +376,10 @@ end;
 
 function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
 begin
+  case aConfig.crCancel of TRUE: EXIT; end;
   result := findPW(aConfig, aRowIx);
+
+  case aConfig.crCancel of TRUE: EXIT; end;
   case result and (aConfig.crProcessType = ptExtract) of TRUE: result := extractArchive(aConfig, aRowIx); end;
 
   case aConfig.crProcessType of ptFind: EXIT; end;
