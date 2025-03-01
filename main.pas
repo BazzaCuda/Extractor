@@ -251,6 +251,7 @@ var
     vRec:     TWin32FindData;
   begin
     result := -1;
+
     vHandle := findFirstFile(PChar(aFilePath), vRec);
     case vHandle <> INVALID_HANDLE_VALUE of TRUE: begin
                                                     winAPI.windows.findClose(vHandle);
@@ -262,6 +263,7 @@ var
   begin
     result    := -1;
     var vSize := -1;
+
     for var i := 0 to vArchive.count - 1 do begin
       case vArchive.isFolder[i] of TRUE: CONTINUE; end;   // ignore folders
       case vArchive.size[i] = 0 of TRUE: CONTINUE; end;   // ignore zero length files
@@ -270,7 +272,7 @@ var
                                     vSize := vArchive.size[i]; end;
                           FALSE: case vArchive.size[i] > vSize of  TRUE:  begin
                                                                             result := i;
-                                                                            vSize   := vArchive.size[i]; end;end;end;end;
+                                                                            vSize  := vArchive.size[i]; end;end;end;end;
   end;
 
 begin
@@ -315,6 +317,7 @@ var
   begin
     result    := -1;
     var vSize := -1;
+
     for var i := 0 to vArchive.count - 1 do begin
       case vArchive.isFolder[i] of TRUE: CONTINUE; end;   // ignore folders
       case vArchive.size[i] = 0 of TRUE: CONTINUE; end;   // ignore zero length files
@@ -370,8 +373,8 @@ function findPW(var aConfig: TConfigRec; const aRowIx: integer): boolean; // res
 
   procedure initRow;
   begin
-    aConfig.crFeedback.caption  := '';
-    aConfig.crPassword          := '';
+    aConfig.crFeedback.caption    := '';
+    aConfig.crPassword            := '';
     aConfig.crSG.cells[1, aRowIX] := '';
     aConfig.crSG.cells[2, aRowIX] := 'testing';
     refreshUI(aConfig);
