@@ -244,6 +244,35 @@ function extractArchive(const aConfig: TConfigRec; const aRowIx: integer): boole
 var
   vArchive: I7zReader;
   vFormatHandler: T7zFormatHandler;
+
+  function fileSize(const aFilePath: string): int64;
+  var
+    vHandle:  THandle;
+    vRec:     TWin32FindData;
+  begin
+    result := -1;
+    vHandle := findFirstFile(PChar(aFilePath), vRec);
+    case vHandle <> INVALID_HANDLE_VALUE of TRUE: begin
+                                                    winAPI.windows.findClose(vHandle);
+                                                    case (vRec.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 of TRUE:
+                                                        result := (int64(vRec.nFileSizeHigh) shl 32) + vRec.nFileSizeLow; end;end;end;
+  end;
+
+  function largestItemIx: integer;
+  begin
+    result    := -1;
+    var vSize := -1;
+    for var i := 0 to vArchive.count - 1 do begin
+      case vArchive.isFolder[i] of TRUE: CONTINUE; end;   // ignore folders
+      case vArchive.size[i] = 0 of TRUE: CONTINUE; end;   // ignore zero length files
+      case vSize = -1 of   TRUE:  begin
+                                    result := i;
+                                    vSize := vArchive.size[i]; end;
+                          FALSE: case vArchive.size[i] > vSize of  TRUE:  begin
+                                                                            result := i;
+                                                                            vSize   := vArchive.size[i]; end;end;end;end;
+  end;
+
 begin
   result := FALSE;
 
@@ -262,8 +291,16 @@ begin
 
   try
     vArchive.extractAll(vOutputPath);
-    result := TRUE;
+
+    var   vIx   := largestItemIx;
+    case  vIx = -1 of TRUE: EXIT; end;        // automatic fail
+
+    var vZipName  := vArchive.zipName[vIx];
+    var vItemSize := vArchive.size[vIx];
+
+    result := vItemSize = fileSize(vOutputPath + vZipName); // verify the largest file extracted ok
   except
+    // extraction failed; result := FALSE
   end;
 end;
 
@@ -300,8 +337,8 @@ begin
     EXIT;
   end;
 
-  var vIx   := smallestItemIx;
-  case vIx = -1 of TRUE: EXIT; end;        // automatic fail
+  var   vIx := smallestItemIx;
+  case  vIx = -1 of TRUE: EXIT; end;        // automatic fail
 
   var vZipName  := vArchive.zipName[vIx];
   var vItemSize := vArchive.size[vIx];
