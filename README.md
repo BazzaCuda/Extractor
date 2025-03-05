@@ -6,7 +6,8 @@ Reads through a list of passwords, determines which password (if any) applies to
 
 Extractor supports all archive formats supported by 7-Zip (7z.dll).
  
-![extractor 2025-02-26_115104](https://github.com/user-attachments/assets/3612f2a1-4421-442e-8c39-aaec0960d4f0)
+![image](https://github.com/user-attachments/assets/e2063409-4b09-4f4d-b44d-ee6b19a8be98)
+
 
 In the .ini file, DLPath=\<some folder\> supplies a base folder for the "Find Files" function, typically your downloads folder.
 You can also drag and drop files from any folder (or multiple folders) from your File Explorer onto the Extractor window to add files to the list. Holding down the SHIFT key when you drop the files will replace the current list.
