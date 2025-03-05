@@ -120,6 +120,8 @@ type
     edtNewPassword:     TEdit;
     lblFeedback:        TLabel;
     pnlButtons:         TPanel;
+    chbMoveExtracted: TCheckBox;
+    Label1: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -415,6 +417,12 @@ begin
 end;
 
 function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
+  procedure moveArchive;
+  begin
+    var vDest := extractFilePath(aConfig.crArchivePath) + '_extracted\';
+    forceDirectories(vDest);
+    TFile.move(aConfig.crArchivePath, vDest + extractFilename(aConfig.crArchivePath));
+  end;
 begin
   case aConfig.crCancel of TRUE: EXIT; end;
   result := findPW(aConfig, aRowIx);
@@ -423,6 +431,8 @@ begin
   case result and (aConfig.crProcessType = ptExtract) of TRUE: result := extractArchive(aConfig, aRowIx); end;
 
   case aConfig.crProcessType of ptFind: EXIT; end;
+
+  case result of   TRUE: moveArchive; end;
 
   case result of   TRUE: aConfig.crSG.cells[2, aRowIx] := 'success';
                   FALSE: aConfig.crSG.cells[2, aRowIx] := 'failed'; end;
