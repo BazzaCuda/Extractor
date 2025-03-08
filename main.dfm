@@ -3057,7 +3057,7 @@ object Form1: TForm1
     object Label1: TLabel
       Left = 6
       Top = 288
-      Width = 82
+      Width = 81
       Height = 45
       Alignment = taCenter
       Caption = 'Move extracted archives to "\_Extracted"'

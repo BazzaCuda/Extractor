@@ -77,6 +77,7 @@ type
     crProcessType:    TProcessType;
     crArchivePath:    string;
     crPassword:       rawUTF8;
+    crMoveExtracted:  boolean;
     crCancel:         boolean;
   end;
 
@@ -291,7 +292,9 @@ begin
     EXIT;
   end;
 
-  var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(aConfig.crArchivePath) + '\';
+  var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(aConfig.crArchivePath);
+  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_extracted'; end; // archive file doesn't have an extension so the output folder will clash
+  vOutputPath := vOutputPath + '\';
 
   try
     vArchive.extractAll(vOutputPath);
@@ -432,7 +435,7 @@ begin
 
   case aConfig.crProcessType of ptFind: EXIT; end;
 
-  case result of   TRUE: moveArchive; end;
+  case result and aConfig.crMoveExtracted of TRUE: moveArchive; end;
 
   case result of   TRUE: aConfig.crSG.cells[2, aRowIx] := 'success';
                   FALSE: aConfig.crSG.cells[2, aRowIx] := 'failed'; end;
@@ -466,6 +469,7 @@ procedure TForm1.btnExtractClick(Sender: TObject);
 begin
   checkForReload;
   FConfig.crProcessType := ptExtract;
+  FConfig.crMoveExtracted := chbMoveExtracted.checked;
   FConfig.crCancel      := FALSE;
   processFiles(FConfig);
 end;
