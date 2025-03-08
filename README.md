@@ -4,13 +4,15 @@ Open Source: https://github.com/BazzaCuda/Extractor
 
 Reads through a list of passwords, determines which password (if any) applies to each archive, and extracts to a subfolder in the same folder as the archive.
 
-Extractor supports all archive formats supported by 7-Zip (7z.dll).
+Extractor supports all archive formats supported by 7-Zip (7z.dll). It detects the archive format of each file by the file contents, not the file extension.
  
 ![image](https://github.com/user-attachments/assets/e2063409-4b09-4f4d-b44d-ee6b19a8be98)
 
 
 In the .ini file, DLPath=\<some folder\> supplies a base folder for the "Find Files" function, typically your downloads folder.
 You can also drag and drop files from any folder (or multiple folders) from your File Explorer onto the Extractor window to add files to the list. Holding down the SHIFT key when you drop the files will replace the current list.
+
+You can drag and drop multiple files at the same time and they will all be added to the grid.
 
 If you click a row in the grid, pressing DELETE will delete that row. It doesn't delete the archive file; Extractor contains no file deletion code whatsoever.
 
@@ -21,6 +23,8 @@ Passwords are contained in the passwords.txt file which is a UTF-8 file to allow
 If you use the add password box, Extractor will maintain the UTF-8 encoding of the passwords.txt file automatically.
 
 In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list specifying which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip
+
+You may drag and drop any archive file format onto the grid - dragged and dropped files are not limited by the extensions you've specified for the "Find Files" function.
 
 The "Extract" function will do a "Find PWs" first. You don't have to do "Find PWs" first and then "Extract".
 
