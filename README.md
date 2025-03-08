@@ -4,7 +4,9 @@ Open Source: https://github.com/BazzaCuda/Extractor
 
 Reads through a list of passwords, determines which password (if any) applies to each archive, and extracts to a subfolder in the same folder as the archive.
 
-Extractor supports all archive formats supported by 7-Zip (7z.dll). It detects the archive format of each file by the file contents, not the file extension.
+Extractor supports all archive formats supported by 7-Zip (7z.dll). 
+
+_Extractor detects the archive format of each file by the file contents, not the file extension._
  
 ![image](https://github.com/user-attachments/assets/e2063409-4b09-4f4d-b44d-ee6b19a8be98)
 
