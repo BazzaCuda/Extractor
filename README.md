@@ -4,9 +4,11 @@ Open Source: https://github.com/BazzaCuda/Extractor
 
 Reads through a list of passwords, determines which password (if any) applies to each archive, and extracts to a subfolder in the same folder as the archive.
 
+**Blisteringly FAST!!**
+
 Extractor supports all archive formats supported by 7-Zip (7z.dll).
 
-NEW: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
+**NEW**: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
 
 _Extractor detects the archive format of each file by the file contents, not the file extension._
  
