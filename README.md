@@ -4,7 +4,11 @@ Open Source: https://github.com/BazzaCuda/Extractor
 
 Reads through a list of passwords, determines which password (if any) applies to each archive, and extracts to a subfolder in the same folder as the archive.
 
-Extractor supports all archive formats supported by 7-Zip (7z.dll). 
+**Blisteringly FAST!!**
+
+Extractor supports all archive formats supported by 7-Zip (7z.dll).
+
+**NEW**: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
 
 _Extractor detects the archive format of each file by the file contents, not the file extension._
  
@@ -35,7 +39,7 @@ If a password is found, it will be copied to the top of the internal list so tha
 Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
 # Known Issues
-The 7z.dll API doesn't seem to handle split archives (...7z.001, ...7z.002, etc., or ...part1.rar, ...part2.rar, etc.). I'm currently considering a possible solution.
+The 7z.dll API doesn't seem to handle split RAR archives (...part1.rar, ...part2.rar, etc.). I'm currently considering a possible solution.
 
 # Build Dependencies
 Mormot2 - OpenSource RESTful ORM/SOA/MVC ToolBox for Delphi and FreePascal: https://github.com/synopse/mORMot2, which contains an excellent Delphi wrapper for 7z.dll
