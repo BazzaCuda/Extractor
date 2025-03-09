@@ -3057,8 +3057,8 @@ object Form1: TForm1
     object Label1: TLabel
       Left = 6
       Top = 288
-      Width = 81
-      Height = 45
+      Width = 69
+      Height = 60
       Alignment = taCenter
       Caption = 'Move extracted archives to "\_Extracted"'
       WordWrap = True
@@ -3083,7 +3083,7 @@ object Form1: TForm1
       OnClick = btnCancelClick
     end
     object btnFindPWs: TButton
-      Left = 6
+      Left = 9
       Top = 41
       Width = 75
       Height = 25
@@ -3107,7 +3107,7 @@ object Form1: TForm1
       TabOrder = 4
     end
     object btnAddNewPassword: TButton
-      Left = 6
+      Left = 9
       Top = 221
       Width = 75
       Height = 25
@@ -3126,7 +3126,7 @@ object Form1: TForm1
     end
     object chbMoveExtracted: TCheckBox
       Left = 37
-      Top = 336
+      Top = 352
       Width = 19
       Height = 17
       Checked = True

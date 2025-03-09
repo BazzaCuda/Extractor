@@ -391,7 +391,7 @@ begin
 
   initRow;
 
-  aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
+//  aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
 
   for var i := 0 to aConfig.crPasswordcount - 1 do begin
     setFeedback(i);
@@ -419,6 +419,67 @@ begin
   case result and (aConfig.crPassword <> '') of TRUE: aConfig.crPasswords.insertPassword(1, aConfig.crPassword); end; // after the '' entry at ix 0
 end;
 
+function checkSplitArchive(aArchivePath: string): string;
+// read e.g. archive.7z.001, archive.7z.002 etc. and write to archive.7z
+var
+  vFiles: TStringList;
+  vOutputFilePath: string;
+
+  function findFiles: integer;
+  var vFile: string;
+  begin
+    var vFileID := 1;
+    while vFileID > 0 do begin
+      vFile := format('%s.%.3d', [vOutputFilePath, vFileID]);
+      case fileExists(vFile) of  TRUE: vFiles.add(vFile);
+                                FALSE: BREAK; end;
+      inc(vFileID);
+   end;
+   result := vFiles.count;
+  end;
+
+  function concatenateFiles: boolean;
+  var
+    vSrcStream, vDstStream: TFileStream;
+    vBufferSize: integer;
+  begin
+    result := FALSE;
+
+    vBufferSize := 8 * 1024 * 1024; // 8MB
+    vDstStream := TFileStream.create(vOutputFilePath, fmCreate);
+    try
+      for var i := 0 to vFiles.count - 1 do begin
+                                              vSrcStream := TFileStream.create(vFiles[i], fmOpenRead);
+                                              try
+                                                vDstStream.copyFrom(vSrcStream, vSrcStream.size, vBufferSize);
+                                              finally
+                                                vSrcStream.free;
+                                              end;end;
+    finally
+      vDstStream.free;
+    end;
+
+    result := TRUE;
+  end;
+
+begin
+  result := aArchivePath;
+  var vExt := extractFileExt(aArchivePath);
+  case vExt = '.001' of FALSE: EXIT; end;
+
+  vOutputFilePath := extractFilePath(aArchivePath) + TPath.getFileNameWithoutExtension(aArchivePath); // strip the .001 to leave <path>/archive.7z
+
+  vFiles := TStringList.create;
+  try
+    vFiles.duplicates := dupIgnore;
+    vFiles.sorted     := TRUE;
+    findFiles;
+    case concatenateFiles of TRUE: result := vOutputFilePath; end; // replace the .001 file in the grid with the concatenated file
+  finally
+    vFiles.free;
+  end;
+end;
+
 function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
   procedure moveArchive;
   begin
@@ -428,6 +489,10 @@ function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
   end;
 begin
   case aConfig.crCancel of TRUE: EXIT; end;
+
+  aConfig.crSG.cells[0, aRowIx] := checkSplitArchive(aConfig.crSG.cells[0, aRowIx]);
+  aConfig.crArchivePath         := aConfig.crSG.cells[0, aRowIx];
+
   result := findPW(aConfig, aRowIx);
 
   case aConfig.crCancel of TRUE: EXIT; end;
