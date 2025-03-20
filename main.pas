@@ -23,7 +23,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Grids, Vcl.ExtCtrls,
-  mormot.lib.win7zip;
+  mormot.lib.win7zip, RAR;
 
 type
   TProcessType = (ptFind, ptExtract);
@@ -76,6 +76,7 @@ type
     // operation specific
     crProcessType:    TProcessType;
     crArchivePath:    string;
+    crSplitRAR:       boolean;
     crPassword:       rawUTF8;
     crMoveExtracted:  boolean;
     crCancel:         boolean;
@@ -123,6 +124,8 @@ type
     pnlButtons:         TPanel;
     chbMoveExtracted: TCheckBox;
     Label1: TLabel;
+    lblLeadingSpace: TLabel;
+    RAR: TRAR;
     procedure FormCreate(Sender: TObject);
     procedure FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -133,6 +136,7 @@ type
     procedure btnFindFilesClick(Sender: TObject);
     procedure btnFindPWsClick(Sender: TObject);
     procedure sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
+    procedure edtNewPasswordChange(Sender: TObject);
   strict private
     FConfig: TConfigRec;
   private
@@ -173,13 +177,29 @@ type
     procedure delRow(aRow: integer);
   end;
 
+  function checkSplitRARArchive(const aArchivePath: string): boolean;
+  begin
+    result := (pos('.part1.rar',    lowerCase(aArchivePath)) = length(aArchivePath) -  9)
+           or (pos('.part01.rar',   lowerCase(aArchivePath)) = length(aArchivePath) - 10)
+           or (pos('.part001.rar',  lowerCase(aArchivePath)) = length(aArchivePath) - 11);
+  end;
+
 function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
  // Embarcadero don't allow this to be local to the findFiles function, because "reasons" :(
  // Consequently, I've had to add aConfig as a parameter which makes this a much less neater and generic a solution than it was going to be :(
  // Having said that, in another project you could define TConfigRec completely differently, so TFileFinder is still a plausibly generic solution
+   function checkSubordinateRARPart: boolean;
+   begin
+     result :=  (lowerCase(extractFileExt(aFilePath)) = '.rar')
+            and (   (pos('.part', lowerCase(aFilePath)) = length(aFilePath) -  9)
+                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 10)
+                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 11)
+                )
+            and NOT checkSplitRARArchive(aFilePath);
+   end;
 begin
   result := FALSE;
-  aConfig.crSG.addRow(aFilePath);
+  case checkSubordinateRARPart of FALSE: aConfig.crSG.addRow(aFilePath); END;
   result := TRUE;
 end;
 
@@ -419,13 +439,15 @@ begin
   case result and (aConfig.crPassword <> '') of TRUE: aConfig.crPasswords.insertPassword(1, aConfig.crPassword); end; // after the '' entry at ix 0
 end;
 
-function checkSplitArchive(aArchivePath: string): string;
+function checkSplit7zArchive(aArchivePath: string): string;
 // read e.g. archive.7z.001, archive.7z.002 etc. and write to archive.7z
+type TSplitType = (stUnk, st7z, stRAR1, stRAR2, stRAR3);
 var
   vFiles: TStringList;
   vOutputFilePath: string;
+  vSplitType: TSplitType;
 
-  function findFiles: integer;
+  function find7zFiles: integer;
   var vFile: string;
   begin
     var vFileID := 1;
@@ -464,16 +486,24 @@ var
 
 begin
   result := aArchivePath;
-  var vExt := extractFileExt(aArchivePath);
-  case vExt = '.001' of FALSE: EXIT; end;
+  var vExt := lowerCase(extractFileExt(aArchivePath));
 
-  vOutputFilePath := extractFilePath(aArchivePath) + TPath.getFileNameWithoutExtension(aArchivePath); // strip the .001 to leave <path>/archive.7z
+  vSplitType := stUnk;
+  case vExt = '.001'      of TRUE: vSplitType := st7z;    end;
+
+  // strip the .001 to leave <path>/archive.7z or strip the .rar to leave <path>/archive.part1
+  vOutputFilePath := extractFilePath(aArchivePath) + TPath.getFileNameWithoutExtension(aArchivePath);
+
+  case vSplitType of stUnk: EXIT; end;
 
   vFiles := TStringList.create;
   try
     vFiles.duplicates := dupIgnore;
     vFiles.sorted     := TRUE;
-    findFiles;
+    case vSplitType of
+      st7z:   find7zFiles;
+//      stRAR1: findRAR1Files;
+    end;
     case concatenateFiles of TRUE: result := vOutputFilePath; end; // replace the .001 file in the grid with the concatenated file
   finally
     vFiles.free;
@@ -490,8 +520,12 @@ function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
 begin
   case aConfig.crCancel of TRUE: EXIT; end;
 
-  aConfig.crSG.cells[0, aRowIx] := checkSplitArchive(aConfig.crSG.cells[0, aRowIx]);
-  aConfig.crArchivePath         := aConfig.crSG.cells[0, aRowIx];
+  aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
+  aConfig.crSplitRAR    := checkSplitRARArchive(aConfig.crArchivePath);
+
+  case aConfig.crSplitRAR of  FALSE:  begin
+                                        aConfig.crSG.cells[0, aRowIx] := checkSplit7zArchive(aConfig.crSG.cells[0, aRowIx]); // split 7z archives get concatenated into one .7z file and that gets processed instead
+                                        aConfig.crArchivePath         := aConfig.crSG.cells[0, aRowIx]; end;end;
 
   result := findPW(aConfig, aRowIx);
 
@@ -504,6 +538,7 @@ begin
 
   case result of   TRUE: aConfig.crSG.cells[2, aRowIx] := 'success';
                   FALSE: aConfig.crSG.cells[2, aRowIx] := 'failed'; end;
+
   refreshUI(aConfig);
 end;
 
@@ -523,6 +558,7 @@ procedure TForm1.btnAddNewPasswordClick(Sender: TObject);
 begin
   FConfig.crPasswordCount := FConfig.crPasswords.addNewPassword(edtNewPassword.text);
   edtNewPassword.clear;
+  lblLeadingSpace.visible := FALSE;
 end;
 
 procedure TForm1.btnCancelClick(Sender: TObject);
@@ -559,6 +595,12 @@ begin
   case chbReloadPWs.checked of TRUE: FConfig.crPasswordCount := FConfig.crPasswords.loadPasswords; end;
   chbReloadPWs.checked := FALSE;
   result := TRUE;
+end;
+
+procedure TForm1.edtNewPasswordChange(Sender: TObject);
+begin
+  case length(edtNewPassword.text) = 0 of TRUE: lblLeadingSpace.visible := FALSE; end;
+  case length(edtNewPassword.text) > 0 of TRUE: lblLeadingSpace.visible := edtNewPassword.text[1] = ' '; end;
 end;
 
 function TForm1.finishSetup: boolean;
