@@ -10,6 +10,9 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 
 **NEW**: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
 
+**COMING**: Extractor v1.7 will support split RAR archives in the form "archive.part1.rar" or "archive.part01.rar" or "archive.part001".rar
+This will only apply, though, to split RAR archives with an encrypted header. Support for split, multi-volume RAR archives which have encrypted files but an unencrypted header will not yet be supported.
+
 _Extractor detects the archive format of each file by the file contents, not the file extension._
  
 ![image](https://github.com/user-attachments/assets/e2063409-4b09-4f4d-b44d-ee6b19a8be98)
@@ -39,7 +42,7 @@ If a password is found, it will be copied to the top of the internal list so tha
 Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
 # Known Issues
-The 7z.dll API doesn't seem to handle split RAR archives (...part1.rar, ...part2.rar, etc.). I'm currently considering a possible solution.
+The 7z.dll API doesn't seem to handle split RAR archives (...part1.rar, ...part2.rar, etc.). This will be addressed in the upcoming v1.7
 
 # Build Dependencies
 Mormot2 - OpenSource RESTful ORM/SOA/MVC ToolBox for Delphi and FreePascal: https://github.com/synopse/mORMot2, which contains an excellent Delphi wrapper for 7z.dll
