@@ -49,6 +49,8 @@ The 7z.dll API doesn't seem to handle split RAR archives (...part1.rar, ...part2
 # Build Dependencies
 Mormot2 - OpenSource RESTful ORM/SOA/MVC ToolBox for Delphi and FreePascal: https://github.com/synopse/mORMot2, which contains an excellent Delphi wrapper for 7z.dll
 
+TRAR - OpenSource: Delphi component for interacting with RAR archives via the official unrar.dll from rarlab.com: https://github.com/BazzaCuda/TRARunrar/
+
 Baz's Debug Window - OpenSource: https://github.com/BazzaCuda/BazDebugWindow, an enhanced reworking of the original DebugWindow by GExperts
 
 ![image](https://github.com/user-attachments/assets/699114aa-15a6-4d0d-b261-8811f696096f)
