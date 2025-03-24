@@ -13,6 +13,7 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 **COMING**: Extractor v1.7 will support split RAR archives in the form "archive.part1.rar" or "archive.part01.rar" or "archive.part001".rar
 
 N.B. Initially, this will only apply to split RAR archives with an encrypted header. Support for split, multi-volume RAR archives which have encrypted files but an unencrypted header will not yet be supported.
+If you want to build the project yourself, the source code for this update has already been added to the repository.
 
 _Extractor detects the archive format of each file by the file contents, not the file extension._
  
