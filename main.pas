@@ -162,6 +162,7 @@ uses
   winApi.shellApi,
   system.ioUtils,
   vcl.clipbrd,
+  RAR_DLL,
   _debugWindow;
 
 type
@@ -185,7 +186,7 @@ type
   end;
 
 function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
- // Embarcadero don't allow this to be local to the findFiles function, because "reasons" :(
+ // Embarcadero don't allow the newFile function to be local to the findFiles function, because "reasons" :(
  // Consequently, I've had to add aConfig as a parameter which makes this a much less neater and generic a solution than it was going to be :(
  // Having said that, in another project you could define TConfigRec completely differently, so TFileFinder is still a plausibly generic solution
    function checkSubordinateRARPart: boolean;
@@ -199,7 +200,7 @@ function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
    end;
 begin
   result := FALSE;
-  case checkSubordinateRARPart of FALSE: aConfig.crSG.addRow(aFilePath); END;
+  case checkSubordinateRARPart of FALSE: aConfig.crSG.addRow(aFilePath); END; // for a split RAR archive, only "find", the part1.rar, part01.rar or part001.rar file
   result := TRUE;
 end;
 
@@ -263,7 +264,8 @@ begin
   result := TRUE;
 end;
 
-function extractArchive(const aConfig: TConfigRec; const aRowIx: integer): boolean;
+function extract7zArchive(const aConfig: TConfigRec; const aRowIx: integer): boolean;
+// extract 7z-compatible archive; this includes single-file .rar archives but not multi-volume ones.
 var
   vArchive: I7zReader;
   vFormatHandler: T7zFormatHandler;
@@ -331,7 +333,31 @@ begin
   end;
 end;
 
-function testArchive(const aConfig: TConfigRec; aPWIx: integer): boolean;
+function extractRARArchive(const aConfig: TConfigRec; const aRowIx: integer): boolean;
+begin
+  result := FALSE;
+
+  aConfig.crSG.cells[2, aRowIx] := 'extracting';
+  refreshUI(aConfig);
+
+  var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(TPath.getFileNameWithoutExtension(aConfig.crArchivePath)); // strip off .part1.rar or .part01.rar or .part001.rar
+  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_extracted'; end; // archive file doesn't have an extension so the output folder will clash
+  vOutputPath := vOutputPath + '\';
+
+  forceDirectories(vOutputPath);
+
+  var vRAR := TRAR.Create(NIL);
+  try
+    vRAR.password := aConfig.crPassword;
+    result := vRAR.extractArchive(aConfig.crArchivePath, vOutputPath);
+  finally
+    vRAR.free;
+  end;
+end;
+
+function test7zArchive(const aConfig: TConfigRec; aPWIx: integer): boolean;
+// test 7z-compatible archive; this includes one-file .rar files but not multi-vol .rar files
+// In this scenario, "testing" means trying to extract the smallest item to a stream.
 var
   vArchive: I7zReader;
   vFormatHandler: T7zFormatHandler;
@@ -387,6 +413,22 @@ begin
   result := vStreamSize = vItemSize;
 end;
 
+function testRARarchive(const aConfig: TConfigRec; aPWIx: integer): boolean;
+// "test" in this scenario means trying to list the contents of the RAR archive.
+// If this operation requires a password and no valid password is provided, the operation will fail.
+// Currently, this function only caters for RAR archives with encrypted headers.
+// It will not work correctly for a RAR archive with encrypted files but an unencrypted header.
+begin
+  var vRAR := TRAR.Create(NIL);
+  try
+    vRAR.password := aConfig.crPasswords.password[aPWIx];
+    vRAR.listArchive(aConfig.crArchivePath);
+    result := NOT ((vRAR.lastResult = ERAR_BAD_PASSWORD) or (vRAR.lastResult = ERAR_MISSING_PASSWORD));
+  finally
+    vRAR.free;
+  end;
+end;
+
 function findPW(var aConfig: TConfigRec; const aRowIx: integer): boolean; // result is also true if the archive isn't password protected, i.e. the password is ''
 
   procedure setFeedback(aIx: integer);
@@ -411,12 +453,11 @@ begin
 
   initRow;
 
-//  aConfig.crArchivePath := aConfig.crSG.cells[0, aRowIx];
-
   for var i := 0 to aConfig.crPasswordcount - 1 do begin
     setFeedback(i);
     case aConfig.crCancel of TRUE: BREAK; end;
-    result := testArchive(aConfig, i);
+    case aConfig.crSplitRAR of   TRUE: result := testRARArchive(aConfig, i);
+                                FALSE: result := test7zArchive(aConfig, i); end;
     case result of TRUE:  begin
                             aConfig.crPassword := aConfig.crPasswords.password[i];
                             BREAK; end;end;end;
@@ -530,7 +571,8 @@ begin
   result := findPW(aConfig, aRowIx);
 
   case aConfig.crCancel of TRUE: EXIT; end;
-  case result and (aConfig.crProcessType = ptExtract) of TRUE: result := extractArchive(aConfig, aRowIx); end;
+  case result and (aConfig.crProcessType = ptExtract) of TRUE: case aConfig.crSplitRAR of  TRUE: result := extractRARArchive(aConfig, aRowIx);
+                                                                                          FALSE: result := extract7zArchive(aConfig, aRowIx); end;end;
 
   case aConfig.crProcessType of ptFind: EXIT; end;
 
