@@ -48,10 +48,11 @@ type
   strict private
     FPasswords: TStringlist;
   private
-    function getPasswordsFile: string;
     function loadPasswordsFromFile(const aPasswordFile: string): boolean;
     function savePasswordsToFile(const aPasswordFile: string): boolean;
+    function getBakFile: string;
     function getDedupedFile: string;
+    function getPasswordsFile: string;
   protected
     destructor  Destroy; override;
   public
@@ -743,6 +744,19 @@ begin
   result := FPasswords[aIx];
 end;
 
+function TPasswords.getBakFile: string;
+begin
+  var vFN       := TPath.getFileNameWithoutExtension(getPasswordsFile); // strip off '.txt'
+  var vBakFile  := vFN + '_bak' + '.txt';
+
+  var i := 0;
+  while fileExists(vBakFile) do begin
+                                  inc(i);
+                                  vBakFile := format('%s%s%d%s', [vFN, '_bak', i, '.txt']); end;
+
+  result := vBakFile;
+end;
+
 function TPasswords.getDedupedFile: string;
 begin
   result := extractFilePath(paramStr(0)) + 'passwords_deduped.txt';
@@ -764,6 +778,9 @@ end;
 
 destructor TPasswords.Destroy;
 begin
+  case fileExists(getPasswordsFile) and fileExists(getDedupedFile) of TRUE: begin
+                                                                              renameFile(getPasswordsFile, getBakFile);
+                                                                              renameFile(getDedupedFile, getPasswordsFile); end;end;
   case FPasswords = NIL of FALSE: FPasswords.free; end;
   inherited;
 end;
