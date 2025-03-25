@@ -400,7 +400,9 @@ begin
   try
     vStream := TMemoryStream.create;  // try to extract the smallest item in the archive to verify the password
     try
-      vArchive.Extract(vIx, vStream);
+      try
+        vArchive.Extract(vIx, vStream);
+      except end;
       vStreamSize := vStream.size;
     finally
       vStream.free;
