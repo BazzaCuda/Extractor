@@ -16,7 +16,7 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 
 **Update**: 
 - Extractor v1.9 monitors the clipboard and places any copied text into the password box, ready for the user to click "Add PW".
-- Clicking an archive file name in the grid will remove that file from the grid (same as `[Delete]`).
+- Clicking an archive file name in the grid will remove that file from the grid.
 - Clicking on a password in the grid will copy that password to the clipboard. The password will appear in the password box, confirming that the copy was successful.
 
 _N.B. Initially, this will only apply to split RAR archives with an encrypted header. Support for split, multi-volume RAR archives which have encrypted files but an unencrypted header will not yet be supported.
