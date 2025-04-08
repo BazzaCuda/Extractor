@@ -12,7 +12,7 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 
 **NEW**: Extractor v1.7 now supports split RAR archives in the form "archive.part1.rar" or "archive.part01.rar" or "archive.part001.rar" - see the release for more details.
 
-**NEW**: On exit, Extractor v1.8 makes a backup copy of "passwords.txt" ("passwords_bak1/2/3.txt"), and then renames "passwords_deduped.txt" to "passwords.txt". The "deduped" file is a sorted version of "passwords.txt" with any duplicates removed. This file is rewritten each time you add a new password in Extractor and becomes the master password file on program exit.
+**NEW**: On exit, Extractor v1.8 makes a backup copy of "passwords.txt" ("passwords_bak1/2/3.txt"), and then renames "passwords_deduped.txt" to "passwords.txt". The "deduped" file is a sorted version of "passwords.txt" with any duplicates removed. This file is rewritten each time you add a new password to "passwords.txt" in Extractor and becomes the master password file on program exit.
 
 _N.B. Initially, this will only apply to split RAR archives with an encrypted header. Support for split, multi-volume RAR archives which have encrypted files but an unencrypted header will not yet be supported.
 If you want to build the project yourself, the source code for this update has already been added to the repository. You will need the source code to my TRAR component: https://github.com/BazzaCuda/TRARunrar/, although you don't need to install it into the Delphi IDE._
