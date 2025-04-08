@@ -10,12 +10,12 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 
 **Update**: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
 
-**Update**: Extractor v1.7 now supports split RAR archives in the form "archive.part1.rar" or "archive.part01.rar" or "archive.part001.rar" - see the release for more details.
+**Update**: Extractor v1.0.7 now supports split RAR archives in the form "archive.part1.rar" or "archive.part01.rar" or "archive.part001.rar" - see the release for more details.
 
-**Update**: On exit, Extractor v1.8 makes a backup copy of "passwords.txt" ("passwords_bak1/2/3.txt"), and then renames "passwords_deduped.txt" to "passwords.txt". The "deduped" file is a sorted version of "passwords.txt" with any duplicates removed. This file is rewritten each time you add a new password to "passwords.txt" in Extractor and becomes the master password file on program exit.
+**Update**: On exit, Extractor v1.0.8 makes a backup copy of "passwords.txt" ("passwords_bak1/2/3.txt"), and then renames "passwords_deduped.txt" to "passwords.txt". The "deduped" file is a sorted version of "passwords.txt" with any duplicates removed. This file is rewritten each time you add a new password to "passwords.txt" in Extractor and becomes the master password file on program exit.
 
 **Update**: 
-- Extractor v1.9 monitors the clipboard and places any copied text into the password box, ready for the user to click "Add PW".
+- Extractor v1.0.9 monitors the clipboard and places any copied text into the password box, ready for the user to click "Add PW".
 - Clicking an archive file name in the grid will remove that file from the grid.
 - Clicking on a password in the grid will copy that password to the clipboard. The password will appear in the password box, confirming that the copy was successful.
 
