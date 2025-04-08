@@ -3056,7 +3056,7 @@ object Form1: TForm1
     end
     object Label1: TLabel
       Left = 6
-      Top = 288
+      Top = 352
       Width = 69
       Height = 60
       Alignment = taCenter
@@ -3064,11 +3064,19 @@ object Form1: TForm1
       WordWrap = True
     end
     object lblLeadingSpace: TLabel
-      Left = 9
-      Top = 252
+      Left = 11
+      Top = 271
       Width = 75
       Height = 15
       Caption = 'leading space!'
+      Visible = False
+    end
+    object lblClipboard: TLabel
+      Left = 20
+      Top = 200
+      Width = 53
+      Height = 15
+      Caption = 'clipboard!'
       Visible = False
     end
     object btnExtract: TButton
@@ -3108,16 +3116,16 @@ object Form1: TForm1
       TabOrder = 3
     end
     object edtNewPassword: TEdit
-      Left = 6
-      Top = 192
+      Left = 8
+      Top = 219
       Width = 82
       Height = 23
       TabOrder = 4
       OnChange = edtNewPasswordChange
     end
     object btnAddNewPassword: TButton
-      Left = 9
-      Top = 221
+      Left = 11
+      Top = 245
       Width = 75
       Height = 25
       Caption = 'Add PW'
@@ -3135,16 +3143,26 @@ object Form1: TForm1
     end
     object chbMoveExtracted: TCheckBox
       Left = 37
-      Top = 352
+      Top = 418
       Width = 19
       Height = 17
       Checked = True
       State = cbChecked
       TabOrder = 7
     end
+    object btnDeleteLeadingSpace: TButton
+      Left = 6
+      Top = 292
+      Width = 86
+      Height = 25
+      Caption = 'Delete Space'
+      Enabled = False
+      TabOrder = 8
+      OnClick = btnDeleteLeadingSpaceClick
+    end
   end
   object RAR: TRAR
-    Left = 600
-    Top = 384
+    Left = 16
+    Top = 392
   end
 end

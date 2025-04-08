@@ -127,6 +127,8 @@ type
     Label1: TLabel;
     lblLeadingSpace: TLabel;
     RAR: TRAR;
+    btnDeleteLeadingSpace: TButton;
+    lblClipboard: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -138,12 +140,18 @@ type
     procedure btnFindPWsClick(Sender: TObject);
     procedure sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
     procedure edtNewPasswordChange(Sender: TObject);
+    procedure btnDeleteLeadingSpaceClick(Sender: TObject);
   strict private
     FConfig: TConfigRec;
+    FClipboardSequence: integer;
   private
     function  checkForReload: boolean;
     procedure WMDropFiles(var msg: TWMDropFiles); message WM_DROPFILES;
     procedure setPasswords(const Value: IPasswords);
+  protected
+    procedure WMClipboardUpdate(var Msg : TMessage); message WM_CLIPBOARDUPDATE;
+    procedure createWnd; override;
+    procedure destroyWnd; override;
   public
     function finishSetup: boolean;
     property config:      TConfigRec read FConfig write FConfig;
@@ -603,12 +611,19 @@ procedure TForm1.btnAddNewPasswordClick(Sender: TObject);
 begin
   FConfig.crPasswordCount := FConfig.crPasswords.addNewPassword(edtNewPassword.text);
   edtNewPassword.clear;
-  lblLeadingSpace.visible := FALSE;
+  lblLeadingSpace.visible       := FALSE;
+  btnDeleteLeadingSpace.enabled := FALSE;
+  lblClipboard.visible          := FALSE;
 end;
 
 procedure TForm1.btnCancelClick(Sender: TObject);
 begin
   FConfig.crCancel := TRUE;
+end;
+
+procedure TForm1.btnDeleteLeadingSpaceClick(Sender: TObject);
+begin
+  edtNewPassword.text := copy(edtNewPassword.text, 2, 255);
 end;
 
 procedure TForm1.btnExtractClick(Sender: TObject);
@@ -642,10 +657,24 @@ begin
   result := TRUE;
 end;
 
+procedure TForm1.createWnd;
+begin
+  inherited;
+  addClipboardFormatListener(handle);
+end;
+
+procedure TForm1.destroyWnd;
+begin
+  removeClipboardFormatListener(handle);
+  inherited;
+end;
+
 procedure TForm1.edtNewPasswordChange(Sender: TObject);
 begin
-  case length(edtNewPassword.text) = 0 of TRUE: lblLeadingSpace.visible := FALSE; end;
-  case length(edtNewPassword.text) > 0 of TRUE: lblLeadingSpace.visible := edtNewPassword.text[1] = ' '; end;
+  case length(edtNewPassword.text) = 0 of TRUE: lblLeadingSpace.visible       := FALSE; end;
+  case length(edtNewPassword.text) = 0 of TRUE: btnDeleteLeadingSpace.enabled := FALSE; end;
+  case length(edtNewPassword.text) > 0 of TRUE: lblLeadingSpace.visible       := edtNewPassword.text[1] = ' '; end;
+  case length(edtNewPassword.text) > 0 of TRUE: btnDeleteLeadingSpace.enabled := edtNewPassword.text[1] = ' '; end;
 end;
 
 function TForm1.finishSetup: boolean;
@@ -691,7 +720,37 @@ end;
 
 procedure TForm1.sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
 begin
-  clipboard.asText := sg.cells[aCol, aRow];
+  case aCol of
+    0:  sg.delRow(aRow);
+    1:  try clipboard.asText := sg.cells[aCol, aRow]; except end;
+  end;
+end;
+
+function mmpDelay(const dwMilliseconds: DWORD): boolean;
+// Used to delay an operation; "sleep()" would suspend the thread, which is not what is required
+var
+  iStart, iStop: DWORD;
+begin
+  result  := FALSE;
+  iStart  := getTickCount;
+  repeat
+    iStop := getTickCount;
+    application.processMessages;
+  until ((iStop  -  iStart) >= dwMilliseconds);
+  result := TRUE;
+end;
+
+procedure TForm1.WMClipboardUpdate(var Msg: TMessage);
+var vText: string;
+begin
+  mmpDelay(1000); // give the app that made the change time to release the clipboard
+  case getClipboardSequenceNumber = FClipboardSequence of FALSE:  begin
+                                                                    FClipboardSequence := GetClipboardSequenceNumber;
+                                                                    vText := '';
+                                                                    case clipboard.hasFormat(CF_TEXT) of TRUE: vText := clipboard.asText; end;
+                                                                    case vText = '' of FALSE: begin
+                                                                                                edtNewPassword.text   := vText;
+                                                                                                lblClipboard.visible  := TRUE; end;end;end;end;
 end;
 
 procedure TForm1.WMDropFiles(var msg: TWMDropFiles);
