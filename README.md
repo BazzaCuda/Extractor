@@ -22,7 +22,7 @@ Extractor supports all archive formats supported by 7-Zip (7z.dll).
 _N.B. Initially, this will only apply to split RAR archives with an encrypted header. Support for split, multi-volume RAR archives which have encrypted files but an unencrypted header will not yet be supported.
 If you want to build the project yourself, the source code for this update has already been added to the repository. You will need the source code to my TRAR component: https://github.com/BazzaCuda/TRARunrar/, although you don't need to install it into the Delphi IDE._
 
-Extractor detects the archive format of each file by the file contents, not the file extension.
+Extractor detects the archive format of each file by the file contents, not the file extension. In fact, an archive file doesn't need to have an extension at all for Extractor to work.
  
 ![image](https://github.com/user-attachments/assets/e2063409-4b09-4f4d-b44d-ee6b19a8be98)
 
