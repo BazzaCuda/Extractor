@@ -32,15 +32,15 @@ You can also drag and drop files from any folder (or multiple folders) from your
 
 You can drag and drop multiple files at the same time and they will all be added to the grid.
 
-If you click a row in the grid, pressing DELETE will delete that row. It doesn't delete the archive file; Extractor contains no file deletion code whatsoever.
+If you click a row in the grid, the file will be removed from the grid. It doesn't delete the archive file; Extractor contains no file deletion code whatsoever. You can add the file back in either by clicking "Add Files" or by dragging and dropping the file onto the grid.
 
-Clicking a cell in the grid will copy the contents to the clipboard.
+Clicking a password cell in the grid will copy the contents to the clipboard.
 
-Passwords are contained in the passwords.txt file which is a UTF-8 file to allow for special characters. If you edit passwords.txt, make sure your editor keeps the file UTF-8 encoded. You can edit this file and check the "reload PWs" checkbox. The file will be reloaded on the next "Find PWs" or "Extract" operation. This saves you having to restart the app between edits. 
+Passwords are contained in the passwords.txt file which is a UTF-8 file to allow for special characters. If you edit passwords.txt, make sure your editor keeps the file UTF-8 encoded. You can manually edit this file and check the "reload PWs" checkbox. The file will be reloaded on the next "Find PWs" or "Extract" operation. This saves you having to restart the app between edits. 
 
 If you use the add password box, Extractor will maintain the UTF-8 encoding of the passwords.txt file automatically.
 
-In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list specifying which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip
+In the .ini file, DLExts= provides a comma-separated, or semi-colon-separated list specifying which archive extensions the "Find Files" function should search for in the DLPath folder. e.g. \*.7z,\*.rar,\*.zip\*.001
 
 You may drag and drop any archive file format onto the grid - dragged and dropped files are not limited by the extensions you've specified for the "Find Files" function. You can even drag and drop a file which has no file extension: if it's a valid, supported archive format, it will be extracted.
 
@@ -51,7 +51,7 @@ If a password is found, it will be copied to the top of the internal list so tha
 Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
 # Known Issues
-The 7z.dll API doesn't seem to handle split RAR archives (...part1.rar, ...part2.rar, etc.). This will be addressed in the upcoming v1.7
+The 7z.dll API doesn't handle split RAR archives (...part1.rar, ...part2.rar, etc.). This was addressed in v1.7
 
 # Build Dependencies
 Mormot2 - OpenSource RESTful ORM/SOA/MVC ToolBox for Delphi and FreePascal: https://github.com/synopse/mORMot2, which contains an excellent Delphi wrapper for 7z.dll
