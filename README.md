@@ -51,7 +51,8 @@ If a password is found, it will be copied to the top of the internal list so tha
 Extractor outputs a sorted and de-duplicated copy of passwords.txt called "passwords_deduped.txt".
 
 # Known Issues
-The 7z.dll API doesn't handle split RAR archives (...part1.rar, ...part2.rar, etc.). This was addressed in v1.7
+The 7z.dll API doesn't handle split RAR archives (...part1.rar, ...part2.rar, etc.). This was addressed in v1.0.7
+The 7z.dll API doesn't handle split .7z archives (...7z.001, ...7z.002, etc.). This was addressed in v1.0.6
 
 # Build Dependencies
 Mormot2 - OpenSource RESTful ORM/SOA/MVC ToolBox for Delphi and FreePascal: https://github.com/synopse/mORMot2, which contains an excellent Delphi wrapper for 7z.dll
