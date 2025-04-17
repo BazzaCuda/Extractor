@@ -199,13 +199,13 @@ function newFile(const aConfig: TConfigRec; const aFilePath: string): boolean;
  // Consequently, I've had to add aConfig as a parameter which makes this a much less neater and generic a solution than it was going to be :(
  // Having said that, in another project you could define TConfigRec completely differently, so TFileFinder is still a plausibly generic solution
    function checkSubordinateRARPart: boolean;
-   begin
-     result :=  (lowerCase(extractFileExt(aFilePath)) = '.rar')
-            and (   (pos('.part', lowerCase(aFilePath)) = length(aFilePath) -  9)
-                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 10)
-                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 11)
+   begin                                                                          // it's a subordinate .rar part if...
+     result :=  (lowerCase(extractFileExt(aFilePath)) = '.rar')                   // it has a .rar extension...
+            and (   (pos('.part', lowerCase(aFilePath)) = length(aFilePath) -  9) // it ends with .partn.rar
+                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 10) // or ends with .partnn.rar
+                 or (pos('.part', lowerCase(aFilePath)) = length(aFilePath) - 11) // or ends with .partnnn.rar
                 )
-            and NOT checkSplitRARArchive(aFilePath);
+            and NOT checkSplitRARArchive(aFilePath);                              // but it's not the initial .part1.rar, part01.rar or part001.rar file
    end;
 begin
   result := FALSE;
@@ -324,7 +324,7 @@ begin
   end;
 
   var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(aConfig.crArchivePath);
-  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_extracted'; end; // archive file doesn't have an extension so the output folder will clash
+  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_'; end; // archive file doesn't have an extension so the output folder will clash
   vOutputPath := vOutputPath + '\';
 
   try
@@ -350,7 +350,7 @@ begin
   refreshUI(aConfig);
 
   var vOutputPath := extractFilePath(aConfig.crArchivePath) + TPath.getFileNameWithoutExtension(TPath.getFileNameWithoutExtension(aConfig.crArchivePath)); // strip off .part1.rar or .part01.rar or .part001.rar
-  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_extracted'; end; // archive file doesn't have an extension so the output folder will clash
+  case lowerCase(vOutputPath) = lowerCase(aConfig.crArchivePath) of TRUE: vOutputPath := vOutputPath + '_'; end; // archive file doesn't have an extension so the output folder will clash
   vOutputPath := vOutputPath + '\';
 
   forceDirectories(vOutputPath);
@@ -565,7 +565,7 @@ end;
 function processFile(var aConfig: TConfigRec; const aRowIx: integer): boolean;
   procedure moveArchive;
   begin
-    var vDest := extractFilePath(aConfig.crArchivePath) + '_extracted\';
+    var vDest := extractFilePath(aConfig.crArchivePath) + '!____\';
     forceDirectories(vDest);
     TFile.move(aConfig.crArchivePath, vDest + extractFilename(aConfig.crArchivePath));
   end;
@@ -805,7 +805,7 @@ end;
 
 function TPasswords.getBakFile: string;
 begin
-  var vFN       := TPath.getFileNameWithoutExtension(getPasswordsFile); // strip off '.txt'
+  var vFN       := extractFilePath(getPasswordsFile) + TPath.getFileNameWithoutExtension(getPasswordsFile); // strip off '.txt'
   var vBakFile  := vFN + '_bak' + '.txt';
 
   var i := 0;

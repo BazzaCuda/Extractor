@@ -3055,12 +3055,12 @@ object Form1: TForm1
       Caption = 'pw: 1 of 1'
     end
     object Label1: TLabel
-      Left = 6
+      Left = 16
       Top = 352
-      Width = 69
+      Width = 60
       Height = 60
       Alignment = taCenter
-      Caption = 'Move extracted archives to "\_Extracted"'
+      Caption = 'Move extracted archives to "\!____"'
       WordWrap = True
     end
     object lblLeadingSpace: TLabel
