@@ -3035,6 +3035,7 @@ object Form1: TForm1
     FixedCols = 0
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goFixedRowDefAlign]
     TabOrder = 0
+    OnClick = sgClick
     OnKeyUp = sgKeyUp
     OnSelectCell = sgSelectCell
   end

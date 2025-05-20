@@ -141,6 +141,7 @@ type
     procedure sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
     procedure edtNewPasswordChange(Sender: TObject);
     procedure btnDeleteLeadingSpaceClick(Sender: TObject);
+    procedure sgClick(Sender: TObject);
   strict private
     FConfig: TConfigRec;
     FClipboardSequence: integer;
@@ -713,6 +714,19 @@ begin
   FConfig.crPasswords := value;
 end;
 
+procedure TForm1.sgClick(Sender: TObject);
+{$J+} const vClicked: boolean = FALSE; {$J-}
+begin
+  case vClicked of TRUE: EXIT; end;
+  vClicked := TRUE;
+  try
+    case sg.col = 0 of FALSE: EXIT; end;
+    case sg.row = 0 of FALSE: sg.delRow(sg.row); end;
+  finally
+    vClicked := FALSE;
+  end;
+end;
+
 procedure TForm1.sgKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   case key = VK_DELETE of TRUE: sg.delRow(sg.row); end;
@@ -721,7 +735,6 @@ end;
 procedure TForm1.sgSelectCell(Sender: TObject; ACol, ARow: LongInt; var CanSelect: Boolean);
 begin
   case aCol of
-    0:  sg.delRow(aRow);
     1:  try clipboard.asText := sg.cells[aCol, aRow]; except end;
   end;
 end;
@@ -788,6 +801,7 @@ end;
 procedure TCustomGridHelper.delRow(aRow: integer);
 begin
   deleteRow(aRow);
+  case row >= rowCount of TRUE: row := rowCount - 1; end;
   case rowCount = 1 of TRUE: TStringGrid(self).initGrid; end; // prevent the "file" column header from being auto-selected
 end;
 
@@ -896,8 +910,9 @@ end;
 
 procedure TStringGridHelper.addRow(const aFilePath: string);
 begin
-  rowCount := rowCount + 1;
-  cells[0, rowCount - 1] := aFilePath;
+  rowCount                := rowCount + 1;
+  cells[0, rowCount - 1]  := aFilePath;
+  fixedRows               := 1;
 end;
 
 procedure TStringGridHelper.clearCol(const aColIx: integer);
@@ -921,12 +936,12 @@ const
 begin
   clearStringGrid;
   defaultRowHeight  := 16;
+  rowCount          := 1;
   cells[0, 0]       := 'file';
   cells[1, 0]       := 'password';
   cells[2, 0]       := 'result';
   colWidths[0]      := 400;
   colWidths[1]      := 200;
-  rowCount          := 1;
   selection         := cNoSelection; // prevent the "file" column header from being auto-selected
 end;
 

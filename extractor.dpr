@@ -15,7 +15,7 @@ uses
 {$R *.res}
 
 begin
-  debugClear;
+  {$if BazDebugWindow}debugClear;{$endif}
 
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
