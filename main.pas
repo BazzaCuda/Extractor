@@ -37,6 +37,7 @@ type
     function getPWs:    TStringlist;
 
     function addNewPassword(const aNewPassword: rawUTF8): integer;
+    function exists(const aPassword: string): boolean;
     function insertPassword(aIx: integer; aPassword: rawUTF8): boolean;
     function loadPasswords: integer;
     property count: integer     read getCount;
@@ -62,6 +63,7 @@ type
     function getPWs:    TStringlist;
 
     function addNewPassword(const aNewPassword: rawUTF8): integer;
+    function exists(const aPassword: string): boolean;
     function insertPassword(aIx: integer; aPassword: rawUTF8): boolean;
     function loadPasswords: integer;
   end;
@@ -676,6 +678,8 @@ begin
   case length(edtNewPassword.text) = 0 of TRUE: btnDeleteLeadingSpace.enabled := FALSE; end;
   case length(edtNewPassword.text) > 0 of TRUE: lblLeadingSpace.visible       := edtNewPassword.text[1] = ' '; end;
   case length(edtNewPassword.text) > 0 of TRUE: btnDeleteLeadingSpace.enabled := edtNewPassword.text[1] = ' '; end;
+  case length(edtNewPassword.text) > 0 of TRUE: case FConfig.crPasswords.exists(edtNewPassword.text) of  TRUE: lblClipboard.font.color := clRed;
+                                                                                                        FALSE: lblClipboard.font.color := clWhite; end;end;
 end;
 
 function TForm1.finishSetup: boolean;
@@ -697,6 +701,7 @@ begin
   width := sg.colWidths[0] + sg.colWidths[1] + sg.colWidths[2] + pnlButtons.width + 30;
 
   lblFeedback.caption := '';
+  lblClipboard.styleElements := [];
 end;
 
 procedure TForm1.FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
@@ -858,6 +863,11 @@ begin
   inherited;
 end;
 
+function TPasswords.exists(const aPassword: string): boolean;
+begin
+  result := FPasswords.indexOf(aPassword) <> -1;
+end;
+
 function TPasswords.addNewPassword(const aNewPassword: rawUTF8): integer;
 begin
   result := -1;
@@ -896,6 +906,8 @@ begin
   FPasswords.sorted     := TRUE;
   FPasswords.loadFromFile(aPasswordFile);
   FPasswords.sorted     := FALSE;
+//  for var i := 0 to FPasswords.count - 1 do
+//    case pos(' - ', FPasswords[i]) > 0 of TRUE: FPasswords[i] := copy(FPasswords[i], pos(' - ', FPasswords[i]) + 3, 255); end;
   result := TRUE;
 end;
 
