@@ -438,6 +438,7 @@ begin
     vRAR.password := aConfig.crPasswords.password[aPWIx];
     vRAR.listArchive(aConfig.crArchivePath);
     result := NOT ((vRAR.lastResult = ERAR_BAD_PASSWORD) or (vRAR.lastResult = ERAR_MISSING_PASSWORD));
+    debugBoolean('result', result);
   finally
     vRAR.free;
   end;
@@ -678,7 +679,10 @@ begin
   case length(edtNewPassword.text) = 0 of TRUE: btnDeleteLeadingSpace.enabled := FALSE; end;
   case length(edtNewPassword.text) > 0 of TRUE: lblLeadingSpace.visible       := edtNewPassword.text[1] = ' '; end;
   case length(edtNewPassword.text) > 0 of TRUE: btnDeleteLeadingSpace.enabled := edtNewPassword.text[1] = ' '; end;
-  case length(edtNewPassword.text) > 0 of TRUE: case FConfig.crPasswords.exists(edtNewPassword.text) of  TRUE: lblClipboard.font.color := clRed;
+  case length(edtNewPassword.text) > 0 of TRUE: case FConfig.crPasswords.exists(edtNewPassword.text) of  TRUE:  begin
+                                                                                                                  lblClipboard.font.color := clRed;
+                                                                                                                  FConfig.crPasswords.insertPassword(1, edtNewPassword.text);
+                                                                                                                end;
                                                                                                         FALSE: lblClipboard.font.color := clWhite; end;end;
 end;
 
