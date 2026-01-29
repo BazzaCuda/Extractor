@@ -6,7 +6,7 @@ Reads through a list of passwords, determines which password (if any) applies to
 
 **Blisteringly FAST!!**
 
-Extractor supports all archive formats supported by 7-Zip (7z.dll).
+Extractor supports all archive formats supported by 7-Zip (7z.dll) and unrar.dll
 
 **Update**: Extractor now supports split 7z archives in the form "archive.7z.001", "archive.7z.002", "archive.7z.003", etc.
 
