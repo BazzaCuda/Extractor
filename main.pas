@@ -438,7 +438,6 @@ begin
     vRAR.password := aConfig.crPasswords.password[aPWIx];
     vRAR.listArchive(aConfig.crArchivePath);
     result := NOT ((vRAR.lastResult = ERAR_BAD_PASSWORD) or (vRAR.lastResult = ERAR_MISSING_PASSWORD));
-    debugBoolean('result', result);
   finally
     vRAR.free;
   end;
